@@ -1,3 +1,0 @@
-ein.zahav.4	ein.zahav.4.blast.parsed
-einan.5	einan.5.blast.parsed
-einan.6	einan.6.blast.parsed
