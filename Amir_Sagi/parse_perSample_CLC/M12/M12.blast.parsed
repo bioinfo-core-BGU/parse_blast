@@ -1,0 +1,5 @@
+qseqid	sallseqid	qlen	slen	qstart	qend	sstart	send	length	evalue	bitscore	score	pident	qframe	align_len	coverage
+contig_14885	contig_4886	92	91	1	89	1	89	89	4.79e-43	165	89	100	1	89	96.7391304347826
+contig_3118	contig_2878	93	92	1	91	1	92	92	1.74e-42	163	88	98.913	1	91	97.8494623655914
+contig_36353	contig_4886	90	91	1	90	1	91	91	6.02e-42	161	87	98.901	1	90	100
+contig_4675	contig_5341	86	109	1	86	19	105	87	4.43e-38	148	80	97.701	1	86	100

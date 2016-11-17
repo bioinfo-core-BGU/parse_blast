@@ -1,0 +1,138 @@
+# QSUB options
+Qsub_q			bioinfo.q
+Qsub_opts		-V
+Qsub_opts		-cwd
+#Pipeline_file	00.pipe.commands.csh	# in scripts dir!
+Default_wait	10	# Seconds to wait after each step to ensure dependency keeping
+
+
+
+# Step-specific parameters.
+# Parameters with single underscore after script name are used in the step function but not passed on to the actual script
+# Parameters with double underscore after script name are passed on to the actual script (in script_path) as is.
+# PLEASE ADD THE `-` OR `--` BEFORE THE ARG KEY. (as of 22.12.14). The reason for this is that some programs mix '-' and '--' args
+# All scripts should have a script_path parameter. 
+# If the step requires a specific node, supply a "node" parameter (see trinity for example)
+# If you are creating a step that requires cd'ing into a different dir (usually java apps), add a "spec_dir" param (see trimmo and b2g)
+
+# merge parameters
+merge:name					merge1
+merge:script_path			cat 			# When raw files are fastq.gz
+
+
+
+# Makes a blastdb for a fasta stored for the sample (original or assembly)
+makeblastdb:name            mkblst1
+makeblastdb:base            merge1
+makeblastdb:script_path     /storage16/app/bioinfo/ncbi-blast-2.2.28+/bin/makeblastdb
+makeblastdb:_-dbtype        nucl        # Or 'prot'
+
+
+
+
+# BLAST and parse - ARGAnnot
+#------------
+blast:name                      blst_ARGAnnot
+blast:base                      mkblst1  
+blast:script_path               /storage16/app/bioinfo/ncbi-blast-2.2.25+/bin/tblastn
+blast:fasta2use                 nucl   # Or "prot". If only one of these exists in data structure, this parameter will be guesses. 
+                                       # (It is up to you to make sure this matches the blast version you supplied...)
+blast:_-query                   /fastspace/bioinfo_databases/Antibiotic_Resistance/ARG-Annot/argannot-aa_doc.fasta
+blast:_-num_descriptions        20      # For downstream best hit will be chosen!
+blast:_-evalue                  0.0001
+blast:_-outfmt                  "6 qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
+blast:_-num_threads             20 
+blast:qsub_opts_-pe             shared 20
+blast:qsub_opts_queue           ess_all.q
+
+
+
+## Parsing BLAST output - Group by antibiotic group
+parse_blast:name                      parse_ARGAnnot
+parse_blast:base                      blst_ARGAnnot
+parse_blast:script_path               Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/parse_blast_general.R
+parse_blast:_--dbtable                /fastspace/bioinfo_databases/Antibiotic_Resistance/ARG-Annot/argannot.tbl
+parse_blast:_--names                  "qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
+parse_blast:blast_merge_path        Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/compare_blast_parsed_reports.R --variable evalue
+parse_blast:_--merge_blast           qseqid
+parse_blast:_--merge_metadata        ID
+parse_blast:_--group_dif_name        group
+parse_blast:_--max_evalue            1e-7
+parse_blast:_--min_coverage          60
+parse_blast:_--min_align_len          30
+parse_blast:_--num_hits             1
+parse_blast:_--columns2keep         "group name accession qseqid sallseqid evalue bitscore score pident coverage align_len"
+parse_blast:qsub_opts_node         sge176,sge177,sge178,sge102,sge213,sge214,sge224
+
+## Parsing BLAST output - Group by gene name
+parse_blast:name                      parse_ARGAnnot
+parse_blast:base                      blst_ARGAnnot
+parse_blast:script_path               Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/parse_blast_general.R
+parse_blast:_--dbtable                /fastspace/bioinfo_databases/Antibiotic_Resistance/ARG-Annot/argannot.tbl
+parse_blast:_--names                  "qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
+parse_blast:blast_merge_path        Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/compare_blast_parsed_reports.R --variable evalue
+parse_blast:_--merge_blast           qseqid
+parse_blast:_--merge_metadata        ID
+parse_blast:_--group_dif_name        name
+parse_blast:_--max_evalue            1e-7
+parse_blast:_--min_coverage          60
+parse_blast:_--min_align_len          30
+parse_blast:_--num_hits             1
+parse_blast:_--columns2keep         "group name accession qseqid sallseqid evalue bitscore score pident coverage align_len"
+parse_blast:qsub_opts_node         sge176,sge177,sge178,sge102,sge213,sge214,sge224
+
+
+
+
+
+# BLAST and parse - ResFinder
+#------------
+blast:name                      blst_ResFinder
+blast:base                      mkblst1  
+blast:script_path               /storage16/app/bioinfo/ncbi-blast-2.2.25+/bin/tblastn
+blast:fasta2use                 nucl   # Or "prot". If only one of these exists in data structure, this parameter will be guesses. 
+                                       # (It is up to you to make sure this matches the blast version you supplied...)
+blast:_-query                   /fastspace/bioinfo_databases/Antibiotic_Resistance/ResFinder/database/all.faa
+blast:_-num_descriptions        20      # For downstream best hit will be chosen!
+blast:_-evalue                  0.0001
+blast:_-outfmt                  "6 qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
+blast:_-num_threads             20 
+blast:qsub_opts_-pe             shared 20
+blast:qsub_opts_queue           ess_all.q
+
+
+
+## Parsing BLAST output - Group by gene name
+parse_blast:name                      parse_ResFinder_gene
+parse_blast:base                      blst_ResFinder
+parse_blast:script_path               Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/parse_blast_general.R
+parse_blast:_--dbtable                /fastspace/bioinfo_databases/Antibiotic_Resistance/ResFinder/ResFinder.tab
+parse_blast:_--names                  "qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
+parse_blast:blast_merge_path        Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/compare_blast_parsed_reports.R --variable evalue
+parse_blast:_--merge_blast           qseqid
+parse_blast:_--merge_metadata        seqID
+parse_blast:_--group_dif_name        name
+parse_blast:_--max_evalue            1e-7
+parse_blast:_--min_coverage          60
+parse_blast:_--min_align_len          30
+parse_blast:_--num_hits             1
+parse_blast:_--columns2keep         "group name accession qseqid sallseqid evalue bitscore score pident coverage align_len"
+parse_blast:qsub_opts_node         sge176,sge177,sge178,sge102,sge213,sge214,sge224
+
+## Parsing BLAST output - Group by antibiotic group
+parse_blast:name                      parse_ResFinder_group
+parse_blast:base                      blst_ResFinder
+parse_blast:script_path               Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/parse_blast_general.R
+parse_blast:_--dbtable                /fastspace/bioinfo_databases/Antibiotic_Resistance/ResFinder/ResFinder.tab
+parse_blast:_--names                  "qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
+parse_blast:blast_merge_path        Rscript /fastspace/bioinfo_scripts/utilities/blast-tools/compare_blast_parsed_reports.R --variable evalue
+parse_blast:_--merge_blast           qseqid
+parse_blast:_--merge_metadata        seqID
+parse_blast:_--group_dif_name        group
+parse_blast:_--max_evalue            1e-7
+parse_blast:_--min_coverage          60
+parse_blast:_--min_align_len          30
+parse_blast:_--num_hits             1
+parse_blast:_--columns2keep         "group name accession qseqid sallseqid evalue bitscore score pident coverage align_len"
+parse_blast:qsub_opts_node         sge176,sge177,sge178,sge102,sge213,sge214,sge224
+
