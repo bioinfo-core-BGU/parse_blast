@@ -3,16 +3,13 @@ library(tools)
 
 # This script 
 
-#     paste("Rscript","compare_blast_parsed_reports.R",
-#                     "--blastind", "blast_reports/index_parsed.txt",
-#                     "--output", "blast_reports/merged_table.txt") %>% system
-
-
 # paste("Rscript",
 #       "compare_blast_parsed_reports.R",
-#       "--blast",    "example_blast.out",
-#       "--dbtable",  "VFG_SN_to_info_v6_with_vfDesc.tsv",
-#       "--names",    "\"qseqid sallseqid qlen\"") %>% system
+#       "--blastind",    "Amir_Sagi/parse_perSample_CLC/parsed_BLAST_files_index.txt",
+#       "--variable",  "bitscore",
+#       "--name",    "qseqid",
+#       "--full_txt_output"
+#       ) %>% system
 # paste("Rscript","compare_blast_parsed_reports.R","-h") %>% system
 
 
@@ -32,7 +29,7 @@ option_list = list(
     make_option(c("-n", "--name"),      type="character", default="name", 
                 help="Column to use as gene names, i.e. row identifier.", metavar="character"),
     make_option(c("-o", "--output"),        type="character", default=NULL, 
-                help="Path to output file",                   metavar="character"),
+                help="Path to output file (default=<blastind>.output)", metavar="character"),
     make_option(c("-u", "--full_txt_output"), type="logical", action = "store_true", 
                 help="Path to output file", metavar="character")
 ); 
@@ -52,9 +49,10 @@ if (is.null(opt$blastind)){
     paste("Rscript",curfile,"-h") %>% system
     stop(cat("No --blastind was passed!\n"))
 }
+
 if (is.null(opt$output)){
-    paste("Rscript",curfile,"-h") %>% system
-    stop(cat("No --output was passed!\n"))
+    opt$output <- sprintf("%s.output",opt$blastind)
+    sprintf("No --output passed. Using %s as output\n", opt$output) %>% cat
 }
 
 # Libraries are loaded here so that the opt parsing is done before failure due to uninstalled packages.
@@ -64,8 +62,8 @@ library(reshape2 )
 
 
 # For debugging:
-opt$output = "Amir_Sagi/parse_perSample_CLC/output"
-opt$blastind = "Amir_Sagi/parse_perSample_CLC/parsed_BLAST_files_index.txt"
+# opt$output = "Amir_Sagi/parse_perSample_CLC/output"
+# opt$blastind = "Amir_Sagi/parse_perSample_CLC/parsed_BLAST_files_index.txt"
 # User defined parameters (future):
 #   blast : blast_report
 #   blast_names : names of blast columns
