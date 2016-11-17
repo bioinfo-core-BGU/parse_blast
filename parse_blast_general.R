@@ -6,17 +6,25 @@ library(optparse)
 library(tools)
 
 
-# paste("Rscript","parse_blast_general.R","--blast","example_blast.out","--dbtable","VFG_SN_to_info_v6_with_vfDesc.tsv") %>% system
+
 # paste("Rscript",
 #       "parse_blast_general.R",
-#       "--blast",    "example_blast_noSN.out",
-#       "--min_align_len",   "30",
+#       "--blast",           "MLST/SAH1503/SAH1503.blast.out",
+#       "--dbtable",         "MLST/MLST_scheme.tab",
 #       "--names",          "\"qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe\"",
-#       "--min_coverage",   "90",
 #       "--merge_blast",    "qseqid",
-#       "--merge_metadata", "VFG",
+#       "--merge_metadata", "Allele",
+#       "--group_dif_name", "Gene",
+#       "--min_pident",     "98",
+#       "--min_coverage",   "98",
 #       "--max_evalue",     "1e-7",
-#       "--dbtable",  "VFG_SN_to_info_v6_with_vfDesc.tsv") %>% system
+#       "--num_hits",       "1",
+#       "--sort_str",       "bitscore,d",
+#       "--fasta2extract",       "MLST/SAH1503.nucl.merge.fa",
+#  #     "--fasta_allsubject",
+#       "--fasta_header",       "sallseqid"
+# ) %>% system
+
 # paste("Rscript","parse_blast_general.R","-h") %>% system
 
 
@@ -69,7 +77,7 @@ option_list = list(
     make_option(c("--fasta_header"), type="character", default="sallseqid", 
                 help="Field in BLAST equivalent to FASTA headers (default: 'sallseqid') ", metavar="numeric"),
     make_option(c("--fasta_allsubject"), type="logical", action="store_false", 
-                help="Field in BLAST equivalent to FASTA headers (default: 'sallseqid') ", metavar="numeric"),
+                help="If set, the whole target sequence will be extracted rather than just the alignment.", metavar="numeric"),
     make_option(c("-g", "--single"), type="logical", action = "store_true",
                 help="Results represent single gene (default: FALSE)"),
     make_option(c("--store_opts"), type="character", default=NULL, 
@@ -82,12 +90,6 @@ opt_parser = optparse::OptionParser(usage = "usage: %prog [options]",
                                     option_list=option_list,
                                     epilogue="\n\nAuthor: Menachem Sklarz");
 opt = optparse::parse_args(opt_parser);
-
-# opt$min_bitscore = opt$min_bitscore %>% as.integer
-# opt$min_coverage = opt$min_coverage %>% as.integer
-# opt$min_align_len = opt$min_align_len %>% as.integer
-# opt$min_pident = opt$min_pident %>% as.integer
-# opt$max_evalue = opt$max_evalue %>% as.integer
 
 if (is.null(opt$blast)){
   opt_parser %>% print_help
@@ -109,21 +111,21 @@ if (is.null(opt$output)){
     opt$output <- sprintf("%s.parsed",opt$blast)
     sprintf("No --output passed. Using %s as output\n", opt$output) %>% cat
 }
-# 
-# opt$dbtable        = "SCC/scc.ccr.metadata.tab"
-# opt$blast          =  "SCC/MRSA252.ccr.blast.out"
+
+# opt$dbtable        = "MLST/MLST_scheme.tab"
+# opt$blast          =  "MLST/SAH1503/SAH1503.blast.out"
 # opt$output         = paste(opt$blast,"parse.out",sep=".")
 # opt$merge_blast    = "qseqid"
-# opt$merge_metadata = "ID"
+# opt$merge_metadata = "Allele"
 # opt$group_dif_name = "Gene"
 # opt$names = "qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
 # opt$columns2keep = "qseqid sallseqid qlen"
 # opt$sort_str       = "bitscore,d"
-# opt$min_pident     = 0
-# opt$min_coverage   = 0
-# opt$fasta_header
-# opt$fasta2extract  = "AN10.nucl.merge.fasta"
-# opt$num_hits       = "all"
+# opt$min_pident     = 98
+# opt$min_coverage   = 98
+# opt$fasta_header   = "sallseqid"
+# opt$fasta2extract  = "MLST/SAH1503.nucl.merge.fa"
+# opt$num_hits       = "1"
 
 if(!is.null(opt$store_opts)) {
     save(opt, file = opt$store_opts)
@@ -263,7 +265,6 @@ if(!all(sort_cols %in% names(blast))) {
 get_best_hit <- function(x) {
     
     # Step 1 - filter out lines that don't match the requierments (give in opts)
-    print(x)
     if(any(exists("coverage", where=x), 
            exists("align_len", where=x))) {
         x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
@@ -306,14 +307,14 @@ if(exists("single", where = opt)) {
     # Cuts the 'blast' df into pieces by 'name', and runs get_best_hit on each slice.
     # The lines returned by get_best_hit are concatenated into a new df, 'blast'...
     blast_df_names <- names(blast)
-    blast_subset <- ddply(.data      = blast, 
-                          .variables = as.quoted(opt$group_dif_name),
-                          .fun       = get_best_hit)
+    blast <- ddply(.data      = blast, 
+                   .variables = as.quoted(opt$group_dif_name),
+                   .fun       = get_best_hit)
     # If there are no results, set blast to an empty df with the same col names as before:
     if(dim(blast)[1]==0) {
-        blast_subset <- data.frame(matrix(vector(), 0, length(blast_df_names),
-                                          dimnames=list(c(), blast_df_names)),
-                                   stringsAsFactors=F)
+        blast <- data.frame(matrix(vector(), 0, length(blast_df_names),
+                                   dimnames=list(c(), blast_df_names)),
+                            stringsAsFactors=F)
     }
 
 }
@@ -329,7 +330,7 @@ cat("Done...\n")
 cat(sprintf("See output file at: %s\n", opt$output))
 
 # If user requested extraction of sequences:
-if(!is.null(opt$fasta2extract)) {
+if(exists("fasta2extract",opt)) {
     # stop("This option is not implemented yet. Sorry...")
     # Load Biostrings library:
     library(Biostrings)
@@ -345,13 +346,17 @@ if(!is.null(opt$fasta2extract)) {
         newseq <- readBStringSet(fastaindex[grep(pattern = blast[i,opt$fasta_header], 
                                                  x       = fastaindex$desc),])
         if(blast[i,"sstart"] > blast[i,"send"]) {
-            if(!opt$fasta_allsubject) {
+            if(!exists("fasta_allsubject",opt)) {
                 newseq <- subseq(newseq, 
                                start = blast[i,"send"], 
                                end = blast[i,"sstart"])    %>%
+                            DNAStringSet                   %>%
                             reverseComplement                
                 names(newseq) <- paste(names(newseq),blast[i,"send"],blast[i,"sstart"],"revcomp",
                                        sep="_")
+                if(exists("dbtable",opt)) {
+                    names(newseq) <- paste(names(newseq), blast[i,opt$merge_blast], sep="|")
+                }
             }
             writeXStringSet(newseq, 
                             filepath = sprintf("%s.fasta",opt$output), 
@@ -362,12 +367,16 @@ if(!is.null(opt$fasta2extract)) {
             # Get the full sequence from the fasta file 
             # get subsequence of it based on blast table (sstart and send)
             # newseq <- fastaindex[which(fastaindex$desc==blast[i,opt$fasta_header])]  
-            if(!opt$fasta_allsubject) {
+            if(!exists("fasta_allsubject",opt)) {
                 newseq <- subseq(newseq, 
                                start = blast[i,"sstart"], 
                                end = blast[i,"send"])
                 names(newseq) <- paste(names(newseq),blast[i,"sstart"],blast[i,"send"],
                                        sep="_")
+                if(exists("dbtable",opt)) {
+                    names(newseq) <- paste(names(newseq), blast[i,opt$merge_blast], sep="|")
+                }
+                
             }
             # Add coordinates to the seq name:
             # Write the sequence to file
