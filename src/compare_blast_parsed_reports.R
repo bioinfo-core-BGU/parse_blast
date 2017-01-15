@@ -148,7 +148,7 @@ if(exists(x = "full_txt_output", where = opt)) {
                        .Platform$file.sep,
                        "flat_file_table.txt",
                        sep="")
-    cat(sprintf("Writing full flat table to: %s\n", full_name))
+    cat(sprintf("Writing textual full flat table to: %s\n", full_name))
     write.table(x         = blast_df, 
                 file      = full_name,
                 append    = F,
@@ -158,11 +158,14 @@ if(exists(x = "full_txt_output", where = opt)) {
 } else {
     full_name <- paste(dirname(file_path_as_absolute(opt$output)),
                        .Platform$file.sep,
-                       "flat_file_table.txt",
+                       "flat_file_table.R",
                        sep="")
-    cat(sprintf("Writing full flat table to: %s\n", full_name))
+    cat(sprintf("Writing binary full flat table to: %s\nLoad with '> load(%s)'\n", full_name,full_name))
     save(blast_df,
          file = full_name
     )
     
 }
+
+
+write(sprintf("%s\tDone...", Sys.time()), file = stderr())
