@@ -7,26 +7,6 @@ library(tools)
 
 
 
-# paste("Rscript",
-#       "parse_blast_general.R",
-#       "--blast",           "MLST/SAH1503/SAH1503.blast.out",
-#       "--dbtable",         "MLST/MLST_scheme.tab",
-#       "--names",          "\"qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe\"",
-#       "--merge_blast",    "qseqid",
-#       "--merge_metadata", "Allele",
-#       "--group_dif_name", "Gene",
-#       "--min_pident",     "98",
-#       "--min_coverage",   "98",
-#       "--max_evalue",     "1e-7",
-#       "--num_hits",       "1",
-#       "--sort_str",       "bitscore,d",
-#       "--fasta2extract",       "MLST/SAH1503.nucl.merge.fa",
-#  #     "--fasta_allsubject",
-#       "--fasta_header",       "sallseqid"
-# ) %>% system
-
-# paste("Rscript","parse_blast_general.R","-h") %>% system
-
 
 args    = commandArgs(trailingOnly = F) 
 filepos = args %>% grep("--file=",x = .)
@@ -38,21 +18,37 @@ print(curfile)
 
 args = commandArgs(trailingOnly=TRUE)
 
+
+    
 option_list = list(
-    make_option(c("-b", "--blast"), type="character", default=NULL, 
-                help="Path to blast results", metavar="character"),
-    make_option(c("-t", "--dbtable"), type="character", default=NULL, 
-                help="Path to table of database sequence (metadata file).", metavar="character"),
-    make_option(c("-o", "--output"), type="character", default=NULL, 
+    make_option(c("-b", "--blast"), 
+                type    = "character", 
+                default = NULL, 
+                help    = "Path to blast results", 
+                metavar = "character"),
+    make_option(c("-t", "--dbtable"), 
+                type="character", 
+                default=NULL, 
+                help="Path to table of database sequence (metadata file).", 
+                metavar="character"),
+    make_option(c("-o", "--output"), 
+                type="character", 
+                default=NULL, 
                 help="Path to output file (default=<blast_input>.parsed)", metavar="character"),
-    make_option(c("-n", "--names"), type="character", default="qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe", 
-                help="List of names in blast table (default: \"qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe\").", metavar="character"),
+    make_option(c("-n", "--names"), 
+                type="character", 
+                default="qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe", 
+                help="List of names in blast table (default: \"qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe\").", 
+                metavar="character"),
     make_option(c("-m", "--merge_blast"), type="character", default="sallseqid", 
                 help="Column in blast file to merge with metadata (default: sallseqid)", metavar="character"),
     make_option(c("-r", "--merge_metadata"), type="character", default=NULL, 
                 help="Column in metadata file to merge with blast results", metavar="character"),			
-    make_option("--group_dif_name", type="character", default="name", 
-                help="Name of field in metadata file that distinguishes between groups (default: \"name\").", metavar="character"),
+    make_option("--group_dif_name", 
+                type="character", 
+                default="name", 
+                help="Name of field in metadata file that distinguishes between groups (default: \"name\").",
+                metavar="character"),
     make_option(c("-s", "--min_bitscore"), type="double", default=0, 
                 help="Minimum bitscore to permit. (default: 0)", metavar="character"),
     make_option(c("-c", "--min_coverage"), type="double", default=0, 
@@ -65,11 +61,14 @@ option_list = list(
                 help="Maximum evalue to permit. (default: 1)", metavar="numeric"),
     make_option(c("--num_hits"), type="character", default="1", 
                 help="Number of hits to report (numeric or 'all') (default: 1)", metavar="numeric"),
-    make_option(c("--sort_str"), type="character", default="bitscore,d,evalue,i,pident,d", 
+    make_option(c("--sort_str"), 
+                type="character", 
+                default="bitscore,d,evalue,i,pident,d", 
                 help="Method to select best HSPs. A comma-separated string of column names.
                 Each column name should be followed by 'd' for decreasing (higher is better) 
                 or 'i' for increasing (lower is better) (default: 'bitscore,d,evalue,i,pident,d')
-                NOTE: You can also use 2 special columns: 'coverage' and 'align_len', e.g. 'align_len,d'", metavar="numeric"),
+                NOTE: You can also use 2 special columns: 'coverage' and 'align_len', e.g. 'align_len,d'", 
+                metavar="numeric"),
     make_option(c("-k","--columns2keep"), type="character", default=NULL, 
                 help="Columns from blast and metadata files to keep. Must be a subset of --names and metadata title line (default: all columns)", metavar="numeric"),
     make_option(c("-f","--fasta2extract"), type="character", default=NULL, 
@@ -87,6 +86,29 @@ option_list = list(
 
 
 opt_parser = optparse::OptionParser(usage = "usage: %prog [options]", 
+                                    description = cat(
+"This program performs the following tasks:
+    a. It adds annotation to raw tabular BLAST output files,
+    b. filters the BLAST results by several possible fields,
+    c. selects the best hit for a group when passed a grouping field and
+    d. extracts the sequences equivalent to the alignments.
+
+The program receives two input files:
+    a. --blast: A tabular BLAST report, as created with `blast --outfmt 6` (For non-default output, you have to pass the list of columns the --names parameter). 
+    b. --dbtable: A table containing the annotation for the query sequences.
+
+parse_blast_general:
+- merges the two tables by the fields specified in parameters --merge_blast and --merge_metadata, respectively; 
+- filters the table by the values supplied in the --min_... and --max_... parameters;
+- sorts the table in the order specified in --sort_str;
+- groups the hits by the field defined in --group_dif_name;
+- optionally, adds a field with the fasta sequence of the alignment (or the whole target) and
+- exports the resulting table (optionally with only a subset of the original columns)
+
+If no --output is specified, will use the <--blast>.parsed as output destination.
+
+"
+                                    ),
                                     option_list=option_list,
                                     epilogue="\n\nAuthor: Menachem Sklarz");
 opt = optparse::parse_args(opt_parser);
@@ -112,20 +134,7 @@ if (is.null(opt$output)){
     sprintf("No --output passed. Using %s as output\n", opt$output) %>% cat
 }
 
-# opt$dbtable        = "../MLST/MLST_scheme.tab"
-# opt$blast          =  "../MLST/SAH1503/SAH1503.blast.out"
-# opt$output         = paste(opt$blast,"parse.out",sep=".")
-# opt$merge_blast    = "qseqid"
-# opt$merge_metadata = "Allele"
-# opt$group_dif_name = "Gene"
-# opt$names = "qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe"
-# opt$columns2keep = "qseqid sallseqid qlen"
-# opt$sort_str       = "bitscore,d"
-# opt$min_pident     = 98
-# opt$min_coverage   = 98
-# opt$fasta_header   = "sallseqid"
-# opt$fasta2extract  = "../MLST/SAH1503.nucl.merge.fa"
-# opt$num_hits       = "1"
+
 
 if(!is.null(opt$store_opts)) {
     save(opt, file = opt$store_opts)
@@ -265,20 +274,32 @@ if(!all(sort_cols %in% names(blast))) {
 get_best_hit <- function(x) {
     
     # Step 1 - filter out lines that don't match the requierments (give in opts)
-    if(any(exists("coverage", where=x), 
-           exists("align_len", where=x))) {
-        x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
-                        evalue    <= opt$max_evalue    &
-                        coverage  >= opt$min_coverage  &
-                        align_len >= opt$min_align_len &
-                        pident    >= opt$min_pident)
+    # if(any(exists("coverage", where=x), 
+           # exists("align_len", where=x))) {
+        # x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
+                        # evalue    <= opt$max_evalue    &
+                        # coverage  >= opt$min_coverage  &
+                        # align_len >= opt$min_align_len &
+                        # pident    >= opt$min_pident)
         
-    } else {
-        x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
-                        evalue    <= opt$max_evalue    &
-                        pident    >= opt$min_pident)
+    # } else {
+        # x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
+                        # evalue    <= opt$max_evalue    &
+                        # pident    >= opt$min_pident)
         
-    }
+    # }
+
+    if(exists("coverage", where=x)) 
+        x <- subset(x,subset = coverage  >= opt$min_coverage )
+    if(exists("bitscore", where=x)) 
+        x <- subset(x,subset = bitscore  >= opt$min_bitscore )
+    if(exists("evalue", where=x)) 
+        x <- subset(x,subset = evalue    <= opt$max_evalue   )
+    if(exists("align_len", where=x)) 
+        x <- subset(x,subset = align_len >= opt$min_align_len)
+    if(exists("pident", where=x)) 
+        x <- subset(x,subset = pident    >= opt$min_pident   )
+        
 
 
     # If all lines are required or more lines than exist in the result group, set num hits to number of rows.    
