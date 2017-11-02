@@ -196,10 +196,6 @@ if(!(opt$group_dif_name %in% names(blast))){
 }
 
 # Calculating coverage as length of hit (hsp) / total length
-# This is what Eliad used (possibly inherited from Nir Gilad)
-# See /fastspace/bioinfo_projects/SPICE/01.Legionella/12.Pathogenicity_VFDB_Acinetobacter/02e.Pipe.VFDB_updated/virulanceAllGenes.pl
-# Line 96
-# Not exacly the same - he parsed a full blast output and here I'm parsing a tabular output...
 if (all("qstart" %in% names(blast), 
         "qend"   %in% names(blast), 
         "qlen"   %in% names(blast))) {
@@ -273,21 +269,6 @@ if(!all(sort_cols %in% names(blast))) {
 # Helper function. Sorts a sub-data.frame by bitscore, then by evalue and returns the first row.
 get_best_hit <- function(x) {
     
-    # Step 1 - filter out lines that don't match the requierments (give in opts)
-    # if(any(exists("coverage", where=x), 
-           # exists("align_len", where=x))) {
-        # x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
-                        # evalue    <= opt$max_evalue    &
-                        # coverage  >= opt$min_coverage  &
-                        # align_len >= opt$min_align_len &
-                        # pident    >= opt$min_pident)
-        
-    # } else {
-        # x <- subset(x,subset = bitscore  >= opt$min_bitscore  &
-                        # evalue    <= opt$max_evalue    &
-                        # pident    >= opt$min_pident)
-        
-    # }
 
     if(exists("coverage", where=x)) 
         x <- subset(x,subset = coverage  >= opt$min_coverage )
@@ -354,62 +335,70 @@ cat(sprintf("See output file at: %s\n", opt$output))
 if(exists("fasta2extract",opt)) {
     # stop("This option is not implemented yet. Sorry...")
     # Load Biostrings library:
-    library(Biostrings)
-    # Check fasta file exists:
-    if(!file.exists(opt$fasta2extract)) {
-        stop(sprintf("FASTA file %s does not exist!\n",opt$fasta2extract))
-    }
-    # Create fasta file index
-    fastaindex <- fasta.index(filepath =  opt$fasta2extract)
-    # For each blast result:
-    for(i in 1:dim(blast)[1]) {
-        # If it is in reverse: (see documentation below for non-reverse)
-        newseq <- readBStringSet(fastaindex[grep(pattern = blast[i,opt$fasta_header], 
-                                                 x       = fastaindex$desc),])
-        if(blast[i,"sstart"] > blast[i,"send"]) {
-            if(!exists("fasta_allsubject",opt)) {
-                newseq <- subseq(newseq, 
-                               start = blast[i,"send"], 
-                               end = blast[i,"sstart"])    %>%
-                            DNAStringSet                   %>%
-                            reverseComplement                
-                names(newseq) <- paste(names(newseq),blast[i,"send"],blast[i,"sstart"],"revcomp",
-                                       sep="_")
-                if(exists("dbtable",opt)) {
-                    names(newseq) <- paste(names(newseq), blast[i,opt$merge_blast], sep="|")
+    
+    if(!("Biostrings" %in% installed.packages())) {
+        cat("'Biostrings' is not installed. Please install it for extracting fasta sequences!
+            install.packages('Biostrings')")
+        
+    } else {
+        
+        library(Biostrings)
+        # Check fasta file exists:
+        if(!file.exists(opt$fasta2extract)) {
+            stop(sprintf("FASTA file %s does not exist!\n",opt$fasta2extract))
+        }
+        # Create fasta file index
+        fastaindex <- fasta.index(filepath =  opt$fasta2extract)
+        # For each blast result:
+        for(i in 1:dim(blast)[1]) {
+            # If it is in reverse: (see documentation below for non-reverse)
+            newseq <- readBStringSet(fastaindex[grep(pattern = blast[i,opt$fasta_header], 
+                                                     x       = fastaindex$desc),])
+            if(blast[i,"sstart"] > blast[i,"send"]) {
+                if(!exists("fasta_allsubject",opt)) {
+                    newseq <- subseq(newseq, 
+                                     start = blast[i,"send"], 
+                                     end = blast[i,"sstart"])    %>%
+                        DNAStringSet                   %>%
+                        reverseComplement                
+                    names(newseq) <- paste(names(newseq),blast[i,"send"],blast[i,"sstart"],"revcomp",
+                                           sep="_")
+                    if(exists("dbtable",opt)) {
+                        names(newseq) <- paste(names(newseq), blast[i,opt$merge_blast], sep="|")
+                    }
                 }
-            }
-            writeXStringSet(newseq, 
-                            filepath = sprintf("%s.fasta",opt$output), 
-                            append = TRUE,
-                            compress=FALSE, 
-                            format="fasta")
-        } else {
-            # Get the full sequence from the fasta file 
-            # get subsequence of it based on blast table (sstart and send)
-            # newseq <- fastaindex[which(fastaindex$desc==blast[i,opt$fasta_header])]  
-            if(!exists("fasta_allsubject",opt)) {
-                newseq <- subseq(newseq, 
-                               start = blast[i,"sstart"], 
-                               end = blast[i,"send"])
-                names(newseq) <- paste(names(newseq),blast[i,"sstart"],blast[i,"send"],
-                                       sep="_")
-                if(exists("dbtable",opt)) {
-                    names(newseq) <- paste(names(newseq), blast[i,opt$merge_blast], sep="|")
+                writeXStringSet(newseq, 
+                                filepath = sprintf("%s.fasta",opt$output), 
+                                append = TRUE,
+                                compress=FALSE, 
+                                format="fasta")
+            } else {
+                # Get the full sequence from the fasta file 
+                # get subsequence of it based on blast table (sstart and send)
+                # newseq <- fastaindex[which(fastaindex$desc==blast[i,opt$fasta_header])]  
+                if(!exists("fasta_allsubject",opt)) {
+                    newseq <- subseq(newseq, 
+                                     start = blast[i,"sstart"], 
+                                     end = blast[i,"send"])
+                    names(newseq) <- paste(names(newseq),blast[i,"sstart"],blast[i,"send"],
+                                           sep="_")
+                    if(exists("dbtable",opt)) {
+                        names(newseq) <- paste(names(newseq), blast[i,opt$merge_blast], sep="|")
+                    }
+                    
                 }
+                # Add coordinates to the seq name:
+                # Write the sequence to file
+                writeXStringSet(newseq, 
+                                filepath = sprintf("%s.fasta",opt$output), 
+                                append = TRUE,
+                                compress=FALSE, 
+                                format="fasta")
+                
                 
             }
-            # Add coordinates to the seq name:
-            # Write the sequence to file
-            writeXStringSet(newseq, 
-                            filepath = sprintf("%s.fasta",opt$output), 
-                            append = TRUE,
-                            compress=FALSE, 
-                            format="fasta")
-            
             
         }
-        
     }
 }
 

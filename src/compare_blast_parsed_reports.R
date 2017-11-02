@@ -1,16 +1,6 @@
 library(optparse)
 library(tools)
 
-# This script 
-
-# paste("Rscript",
-#       "compare_blast_parsed_reports.R",
-#       "--blastind",    "Amir_Sagi/parse_perSample_CLC/parsed_BLAST_files_index.txt",
-#       "--variable",  "bitscore",
-#       "--name",    "qseqid",
-#       "--full_txt_output"
-#       ) %>% system
-# paste("Rscript","compare_blast_parsed_reports.R","-h") %>% system
 
 
 args    = commandArgs(trailingOnly = F) 
@@ -60,13 +50,6 @@ library(magrittr)
 library(plyr )
 library(reshape2 )
 
-
-# For debugging:
-# opt$output = "Amir_Sagi/parse_perSample_CLC/output"
-# opt$blastind = "Amir_Sagi/parse_perSample_CLC/parsed_BLAST_files_index.txt"
-# User defined parameters (future):
-#   blast : blast_report
-#   blast_names : names of blast columns
 
 
 # Read table of files

@@ -15,7 +15,20 @@ paste("Rscript",
       "--fasta2extract",       "MLST/SAH1503.nucl.merge.fa",
       "--fasta_allsubject",
       "--fasta_header",       "sallseqid"
-# ) %>% system
-) %>% paste
+) %>% system
+#) %>% paste
 
 paste("Rscript","src/parse_blast_general.R","-h") %>% system
+
+
+
+# This script
+
+paste("Rscript",
+      "compare_blast_parsed_reports.R",
+      "--blastind",    "",
+      "--variable",  "bitscore",
+      "--name",    "qseqid",
+      "--full_txt_output"
+      ) %>% system
+paste("Rscript","compare_blast_parsed_reports.R","-h") %>% system
