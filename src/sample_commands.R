@@ -1,6 +1,6 @@
 
 paste("Rscript",
-      "./src/parse_blast_general.R",
+      "./src/parse_blast.R",
       "--blast",           "MLST/SAH1503/SAH1503.blast.out",
       "--dbtable",         "MLST/MLST_scheme.tab",
       "--names",          "\"qseqid sallseqid qlen slen qstart qend sstart send length evalue bitscore score pident qframe\"",
@@ -18,7 +18,7 @@ paste("Rscript",
 ) %>% system
 #) %>% paste
 
-paste("Rscript","src/parse_blast_general.R","-h") %>% system
+paste("Rscript","src/parse_blast.R","-h") %>% system
 
 
 
