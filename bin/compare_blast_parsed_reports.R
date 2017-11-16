@@ -1,3 +1,7 @@
+#!/usr/bin/env R
+# AUTHOR: Menachem Sklarz & Michal Gordon
+
+
 library(optparse)
 library(tools)
 
