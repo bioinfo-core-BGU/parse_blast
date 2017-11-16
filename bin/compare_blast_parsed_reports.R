@@ -1,4 +1,4 @@
-#!/usr/bin/env R
+#!/usr/bin/env Rscript
 # AUTHOR: Menachem Sklarz & Michal Gordon
 
 

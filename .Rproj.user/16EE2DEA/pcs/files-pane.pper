@@ -1,9 +1,0 @@
-{
-    "path" : "~/python_pipeline_gitlab/parse_blast_general/src",
-    "sortOrder" : [
-        {
-            "ascending" : true,
-            "columnIndex" : 2
-        }
-    ]
-}
