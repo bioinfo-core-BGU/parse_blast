@@ -207,7 +207,9 @@ names(blast) = strsplit(opt$names,
 if(!is.null(opt$merge_metadata)) {
     
     # Make sure the column names used for merging with metadata exists:
-    stopifnot(opt$merge_blast %in% colnames(blast) )
+    if(!(opt$merge_blast %in% colnames(blast) )) {
+        stop("Argument --merge_blast (-m) does not exist in BLAST table (check parameter --names)")
+    }
     
     # Read gene metadata:
     metadata = read.delim(file             = opt$dbtable,  
@@ -215,7 +217,8 @@ if(!is.null(opt$merge_metadata)) {
                           comment.char     = "#",
                           quote            = "",
                           stringsAsFactors = F)
-    # Test passes merge field exists in metadata file:
+    # Test passed merge field exists in metadata file:
+    opt$merge_metadata <- make.names(opt$merge_metadata)
     if(!(opt$merge_metadata %in% names(metadata))){
         opt_parser %>% print_help
         stop(sprintf("--merge_metadata ('%s') does not exist in metadata columns! (%s)\n",
