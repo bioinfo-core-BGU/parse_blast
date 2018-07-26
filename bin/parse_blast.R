@@ -236,7 +236,9 @@ if(!is.null(opt$merge_metadata)) {
 }
 
 # Check that opt$group_dif_name exists in blast df:
-if(!(opt$group_dif_name %in% names(blast))){
+group_dif <- strsplit(opt$group_dif_name,
+                       split = ",") %>% unlist
+if(!(all(group_dif %in% names(blast)))){
     opt_parser %>% print_help
     stop(sprintf("--group_dif_name ('%s') does not exist in blast or metadata columns! (%s)\n",
                  opt$group_dif_name,
@@ -358,7 +360,8 @@ if(exists("single", where = opt)) {
     # The lines returned by get_best_hit are concatenated into a new df, 'blast'...
     blast_df_names <- names(blast)
     blast <- ddply(.data      = blast, 
-                   .variables = as.quoted(opt$group_dif_name),
+                   .variables = as.quoted(group_dif),
+                   # .variables = as.quoted(opt$group_dif_name),
                    .fun       = get_best_hit)
     # If there are no results, set blast to an empty df with the same col names as before:
     if(dim(blast)[1]==0) {
