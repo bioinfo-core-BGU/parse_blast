@@ -193,14 +193,14 @@ if (opt$threads  == 1) {
 proc2use     <- opt$threads
 
 # Register multicores if run on linux (=cluster)
-if(!is.null(proc2use)) {
+if(!is.null(opt$threads)) {
     
     if(tolower(Sys.info()["sysname"]) == "linux") {
         library(doMC)   # For linux
-        registerDoMC(proc2use)
+        registerDoMC(opt$threads)
     } else {
-        proc2use <- NULL      # Do not use parallelization on windows!
-        #         cl <- makeCluster(proc2use, type = "SOCK")
+        opt$threads <- NULL      # Do not use parallelization on windows!
+        #         cl <- makeCluster(opt$threads, type = "SOCK")
         #         clusterCall(cl, source, "")
         #         registerDoSNOW(cl)
     }
@@ -213,7 +213,8 @@ if(!is.null(opt$store_opts)) {
 }
 
 # Read blast results:
-blast <- read.delim(opt$blast, 
+cat(sprintf("[%s] Reading BLAST table\n", date()))
+blast <- read.delim(opt$blast, nrows = 1e6,
                     he = F, 
                     stringsAsFactors = F)
 # print(opt$merge_metadata)
@@ -382,7 +383,7 @@ if(exists("single", where = opt)) {
     blast <- get_best_hit(blast)
 } else {
     # Use 
-    cat("Running ddply. Takes a while...\n")
+    sprintf("[%s] Running ddply. Takes a while...\n", date()) %>% cat
     # Cuts the 'blast' df into pieces by 'name', and runs get_best_hit on each slice.
     # The lines returned by get_best_hit are concatenated into a new df, 'blast'...
     blast_df_names <- names(blast)
@@ -390,7 +391,7 @@ if(exists("single", where = opt)) {
                    .variables = as.quoted(group_dif),
                    # .variables = as.quoted(opt$group_dif_name),
                    .progress = "win",
-                   .parallel = ifelse(is.null(proc2use),FALSE,TRUE),   # If proc2use is set to NA, don't do parallelization
+                   .parallel = ifelse(is.null(opt$threads),FALSE,TRUE),   # If opt$threads is set to NA, don't do parallelization
                    .fun       = get_best_hit)
     # blast_dplyr <- 
     #     blast %>% 
@@ -414,8 +415,7 @@ write.table(blast[,opt$columns2keep],
             row.names = F,
             sep       = "\t")
 
-cat("Done...\n")
-cat(sprintf("See output file at: %s\n", opt$output))
+cat(sprintf("[%s] Done. See output file at: %s\n", date(), opt$output))
 
 # If user requested extraction of sequences:
 if(exists("fasta2extract",opt)) {
