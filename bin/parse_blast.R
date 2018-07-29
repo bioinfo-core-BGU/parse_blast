@@ -6,6 +6,7 @@ library(plyr )
 library(optparse)
 library(tools)
 
+# For parallelization:
 
 
 
@@ -121,6 +122,11 @@ option_list = list(
                 type = "logical", 
                 action  =  "store_true",
                 help = "Results represent single gene (default: FALSE)"),
+    make_option(c("--threads"), 
+                type = "integer", 
+                default = 1, 
+                help = "Number of threads (default: 1)", 
+                metavar = "numeric"),
     make_option(c("--store_opts"), 
                 type = "character", 
                 default = NULL, 
@@ -177,6 +183,27 @@ if (is.null(opt$merge_blast) & !is.null(opt$dbtable)){
 if (is.null(opt$output)){
     opt$output <- sprintf("%s.parsed",opt$blast)
     sprintf("No --output passed. Using %s as output\n", opt$output) %>% cat
+}
+
+if (opt$threads  == 1) {
+    opt$threads <- NULL
+}
+
+# Define number of processors:
+proc2use     <- opt$threads
+
+# Register multicores if run on linux (=cluster)
+if(!is.null(proc2use)) {
+    
+    if(tolower(Sys.info()["sysname"]) == "linux") {
+        library(doMC)   # For linux
+        registerDoMC(proc2use)
+    } else {
+        proc2use <- NULL      # Do not use parallelization on windows!
+        #         cl <- makeCluster(proc2use, type = "SOCK")
+        #         clusterCall(cl, source, "")
+        #         registerDoSNOW(cl)
+    }
 }
 
 
@@ -362,7 +389,15 @@ if(exists("single", where = opt)) {
     blast <- ddply(.data      = blast, 
                    .variables = as.quoted(group_dif),
                    # .variables = as.quoted(opt$group_dif_name),
+                   .progress = "win",
+                   .parallel = ifelse(is.null(proc2use),FALSE,TRUE),   # If proc2use is set to NA, don't do parallelization
                    .fun       = get_best_hit)
+    # blast_dplyr <- 
+    #     blast %>% 
+    #     as_tibble %>% 
+    #     group_by(!!!group_dif) %>% 
+    #     mutate(yoo=get_best_hit)
+    
     # If there are no results, set blast to an empty df with the same col names as before:
     if(dim(blast)[1]==0) {
         blast <- data.frame(matrix(vector(), 0, length(blast_df_names),
