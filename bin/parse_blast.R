@@ -15,13 +15,13 @@ filepos = args %>% grep("--file=",x = .)
 curfile = sub(pattern     = "--file=",
               replacement = "",
               x           = args[filepos]) %>% file_path_as_absolute
-print(curfile)
+# print(curfile)
 
 
 args = commandArgs(trailingOnly=TRUE)
 
 
-    
+cl_cmd <- args %>% paste(collapse = " ")
 
 option_list = list(
     make_option(c("-b", "--blast"), 
@@ -390,7 +390,6 @@ if(exists("single", where = opt)) {
     blast <- ddply(.data      = blast, 
                    .variables = as.quoted(group_dif),
                    # .variables = as.quoted(opt$group_dif_name),
-                   .progress = "win",
                    .parallel = ifelse(is.null(opt$threads),FALSE,TRUE),   # If opt$threads is set to NA, don't do parallelization
                    .fun       = get_best_hit)
     # blast_dplyr <- 
@@ -409,7 +408,9 @@ if(exists("single", where = opt)) {
 }
 
 # Print output to file (if there are results at all):
+writeLines(con = opt$output,text = sprintf("# Executable: %s\n# Arguments: %s",curfile,cl_cmd))
 write.table(blast[,opt$columns2keep],
+            append = T,
             file      = opt$output,
             quote     = F,
             row.names = F,

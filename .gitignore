@@ -6,4 +6,6 @@ parse_blast_general.Rproj
 dist
 sample_run.txt
 MLST/**
-MLST
+
+opts.R
+.Rhistory
