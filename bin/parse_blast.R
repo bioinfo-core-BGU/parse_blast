@@ -214,7 +214,7 @@ if(!is.null(opt$store_opts)) {
 
 # Read blast results:
 cat(sprintf("[%s] Reading BLAST table\n", date()))
-blast <- read.delim(opt$blast, nrows = 1e6,
+blast <- read.delim(opt$blast, #nrows = 1e6,
                     he = F, 
                     stringsAsFactors = F)
 # print(opt$merge_metadata)
