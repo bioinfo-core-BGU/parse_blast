@@ -68,21 +68,21 @@ file_index = read.delim(opt$blastind,
 blast_df <- apply(  X      = file_index,
                     MARGIN = 1,
                     FUN    = function(x) {
-                                            # Reading parsed results file:
-                                            blast_table <- try_default(expr = read.delim(x[2],
-                                                                                         he = T),
-                                                                       default = NULL) 
-                                            # No file read:
-                                            if(blast_table %>% is.null) {
-                                                cat(sprintf("Could not read file %s\n",x[2]))   
-                                                return(NULL)
-                                            }
-                                            # Solving issue of empty files:
-                                            if(dim(blast_table)[1]==0) blast_table[1,1] <- NA
-                                            # Setting sample name column:
-                                            blast_table$sample_name <- x[1];
-                                            return(blast_table)
-                                          })
+                        # Reading parsed results file:
+                        cat(sprintf("Reading file %s\n",x[2]))
+                        blast_table <- try_default(expr = read.table(x[2],he = T),
+                                                   default = NULL) 
+                        # No file read:
+                        if(blast_table %>% is.null) {
+                            cat(sprintf("Could not read file %s\n",x[2]))   
+                            return(NULL)
+                        }
+                        # Solving issue of empty files:
+                        if(dim(blast_table)[1]==0) blast_table[1,1] <- NA
+                        # Setting sample name column:
+                        blast_table$sample_name <- x[1];
+                        return(blast_table)
+                    })
 #   concatenate by row (rbind) = merge all tables into one long table
 blast_df  <- do.call("rbind", blast_df)
 
