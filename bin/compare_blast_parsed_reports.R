@@ -148,7 +148,7 @@ if(exists(x = "full_txt_output", where = opt)) {
                        .Platform$file.sep,
                        "flat_file_table.R",
                        sep="")
-    cat(sprintf("Writing binary full flat table to: %s\nLoad with '> load(%s)'\n", full_name,full_name))
+    cat(sprintf("Writing binary full flat table to: %s\nLoad (into 'blast_df' with 'load('%s')'\n", full_name,full_name))
     save(blast_df,
          file = full_name
     )
