@@ -219,7 +219,9 @@ blast <- tryCatch(read.delim(opt$blast, #nrows = 1e6,
                              stringsAsFactors = F),
                   error=function(e) {
                       if (e$message == "no lines available in input") {
-                          stop("Your BLAST results are empty!!!");
+                          write("Your BLAST results are empty!!!",stderr());
+                          write("Your BLAST results are empty!!!",stdout());
+                          quit()
                       } else {
                           stop(e)
                       }
@@ -260,7 +262,9 @@ if(!is.null(opt$merge_metadata)) {
                                     stringsAsFactors = F),
                          error=function(e) {
                              if (e$message == "no lines available in input") {
-                                 stop("Your metadata table is empty!!!");
+                                 write("Your metadata table is empty!!!", stderr());
+                                 write("Your metadata table is empty!!!", stdout());
+                                 stop(e)
                              } else {
                                  stop(e)
                              }
