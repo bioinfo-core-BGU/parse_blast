@@ -214,9 +214,21 @@ if(!is.null(opt$store_opts)) {
 
 # Read blast results:
 cat(sprintf("[%s] Reading BLAST table\n", date()))
-blast <- read.delim(opt$blast, #nrows = 1e6,
-                    he = F, 
-                    stringsAsFactors = F)
+blast <- tryCatch(read.delim(opt$blast, #nrows = 1e6,
+                             he = F, 
+                             stringsAsFactors = F),
+                  error=function(e) {
+                      if (e$message == "no lines available in input") {
+                          stop("Your BLAST results are empty!!!");
+                      } else {
+                          stop(e)
+                      }
+                  }
+                  )
+
+
+
+
 # print(opt$merge_metadata)
 my.colnames = strsplit(opt$names,
                        split = " ") %>% unlist
@@ -240,11 +252,22 @@ if(!is.null(opt$merge_metadata)) {
     }
     
     # Read gene metadata:
-    metadata = read.delim(file             = opt$dbtable,  
-                          header           = T,  
-                          comment.char     = "#",
-                          quote            = "",
-                          stringsAsFactors = F)
+    
+    metadata <- tryCatch(read.delim(file             = opt$dbtable,  
+                                    header           = T,  
+                                    comment.char     = "#",
+                                    quote            = "",
+                                    stringsAsFactors = F),
+                         error=function(e) {
+                             if (e$message == "no lines available in input") {
+                                 stop("Your metadata table is empty!!!");
+                             } else {
+                                 stop(e)
+                             }
+                         }
+    )
+    
+    
     # Test passed merge field exists in metadata file:
     opt$merge_metadata <- make.names(opt$merge_metadata)
     if(!(opt$merge_metadata %in% names(metadata))){
