@@ -118,6 +118,10 @@ option_list = list(
                 type = "logical", 
                 action = "store_false", 
                 help = "If set, the whole target sequence will be extracted rather than just the alignment."),
+    make_option(c("--DontAppendResults"), 
+                type = "logical", 
+                action = "store_false", 
+                help = "If set, The results will NOT be Appended to an existent file."),
     make_option(c("-g", "--single"), 
                 type = "logical", 
                 action  =  "store_true",
@@ -437,7 +441,7 @@ if(exists("single", where = opt)) {
 # Print output to file (if there are results at all):
 writeLines(con = opt$output,text = sprintf("# Executable: %s\n# Arguments: %s",curfile,cl_cmd))
 write.table(blast[,opt$columns2keep],
-            append = T,
+            append = opt$DontAppendResults,
             file      = opt$output,
             quote     = F,
             row.names = F,
