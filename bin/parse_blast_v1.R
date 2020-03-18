@@ -410,7 +410,7 @@ if(exists("single", where = opt)) {
 # Print output to file (if there are results at all):
 # writeLines(con = opt$output,text = sprintf("# Executable: %s\n# Arguments: %s",curfile,cl_cmd))
 write.table(blast[,opt$columns2keep],
-            append = T,
+            append = F,
             file      = opt$output,
             quote     = F,
             row.names = F,
