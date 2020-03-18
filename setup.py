@@ -15,6 +15,7 @@ setup(
     download_url        = 'https://github.com/bioinfo-core-BGU/parse_blast.git',
     platforms           = ["POSIX","Windows"],
     scripts             = ['bin/parse_blast.R',
+                            'bin/parse_blast_v1.R',
                             'bin/compare_blast_parsed_reports.R'],
     )
     
